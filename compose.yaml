@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+#  app:
+#    build: .
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - db
+#    environment:
+#      OPENAI_API_KEY: jina_6045ee23ec2f49069974e67a75e88460_BNzdTAy8opRiaoPq0H_x7B3BMQW
+#    volumes:
+#      - ~/.m2:/root/.m2
+  postgres:
+    image: postgres:14.1-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+    ports:
+      - '5432:5432'

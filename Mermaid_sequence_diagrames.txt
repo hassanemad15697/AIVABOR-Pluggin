@@ -1,0 +1,95 @@
+%% Docker_Env
+sequenceDiagram
+    participant User
+    participant DataController
+    participant DataProcessingFacadeService
+    participant DataProcessingService
+    participant DataSourceService
+    participant PgVectorService
+    participant DockerPgVectorInstaller
+    participant Database
+
+    User->>DataController: POST /api/data/process/docker (ProcessRequest)
+    DataController->>DataProcessingFacadeService: processData(request, DOCKER)
+    DataProcessingFacadeService->>DataProcessingService: validateIdentifiers(request)
+    DataProcessingFacadeService->>DataSourceService: initializeDataSource(request)
+    DataProcessingFacadeService->>PgVectorService: installPgVectorIfNeeded(request, DOCKER)
+    PgVectorService->>PgVectorService: isPgVectorInstalled?
+    alt pgvector not installed
+        PgVectorService->>DockerPgVectorInstaller: installPgVector(request)
+        DockerPgVectorInstaller->>DockerPgVectorInstaller: Install pgvector in Docker container
+        DockerPgVectorInstaller->>PgVectorService: Installation complete
+        PgVectorService->>Database: CREATE EXTENSION vector
+    else pgvector installed
+        PgVectorService->>PgVectorService: Skip installation
+    end
+    DataProcessingFacadeService->>DataProcessingService: createVectorTable(request)
+    DataProcessingFacadeService->>DataProcessingService: processAndInsertData(request)
+    DataProcessingService->>Database: Insert embeddings into vector table
+    DataController-->>User: HTTP 200 OK (Data processing completed)
+
+
+
+%% Linux_ENV
+sequenceDiagram
+    participant User
+    participant DataController
+    participant DataProcessingFacadeService
+    participant DataProcessingService
+    participant DataSourceService
+    participant PgVectorService
+    participant SandboxLinuxPgVectorInstaller
+    participant Database
+
+    User->>DataController: POST /api/data/process/sandbox/linux (ProcessRequest)
+    DataController->>DataProcessingFacadeService: processData(request, SANDBOX_LINUX)
+    DataProcessingFacadeService->>DataProcessingService: validateIdentifiers(request)
+    DataProcessingFacadeService->>DataSourceService: initializeDataSource(request)
+    DataProcessingFacadeService->>PgVectorService: installPgVectorIfNeeded(request, SANDBOX_LINUX)
+    PgVectorService->>PgVectorService: isPgVectorInstalled?
+    alt pgvector not installed
+        PgVectorService->>SandboxLinuxPgVectorInstaller: installPgVector(request)
+        SandboxLinuxPgVectorInstaller->>SandboxLinuxPgVectorInstaller: Install pgvector on Linux host
+        SandboxLinuxPgVectorInstaller->>PgVectorService: Installation complete
+        PgVectorService->>Database: CREATE EXTENSION vector
+    else pgvector installed
+        PgVectorService->>PgVectorService: Skip installation
+    end
+    DataProcessingFacadeService->>DataProcessingService: createVectorTable(request)
+    DataProcessingFacadeService->>DataProcessingService: processAndInsertData(request)
+    DataProcessingService->>Database: Insert embeddings into vector table
+    DataController-->>User: HTTP 200 OK (Data processing completed)
+
+
+
+%% WIN_Env
+sequenceDiagram
+    participant User
+    participant DataController
+    participant DataProcessingFacadeService
+    participant DataProcessingService
+    participant DataSourceService
+    participant PgVectorService
+    participant SandboxWindowsPgVectorInstaller
+    participant Database
+
+    User->>DataController: POST /api/data/process/sandbox/windows (ProcessRequest)
+    DataController->>DataProcessingFacadeService: processData(request, SANDBOX_WINDOWS)
+    DataProcessingFacadeService->>DataProcessingService: validateIdentifiers(request)
+    DataProcessingFacadeService->>DataSourceService: initializeDataSource(request)
+    DataProcessingFacadeService->>PgVectorService: installPgVectorIfNeeded(request, SANDBOX_WINDOWS)
+    PgVectorService->>PgVectorService: isPgVectorInstalled?
+    alt pgvector not installed
+        PgVectorService->>SandboxWindowsPgVectorInstaller: installPgVector(request)
+        SandboxWindowsPgVectorInstaller->>SandboxWindowsPgVectorInstaller: Installation not implemented
+        SandboxWindowsPgVectorInstaller-->>PgVectorService: Throws UnsupportedOperationException
+        PgVectorService-->>DataProcessingFacadeService: Exception thrown
+        DataProcessingFacadeService-->>DataController: Exception thrown
+        DataController-->>User: HTTP 400 Bad Request (Installation on Windows not implemented)
+    else pgvector installed
+        PgVectorService->>PgVectorService: Skip installation
+        DataProcessingFacadeService->>DataProcessingService: createVectorTable(request)
+        DataProcessingFacadeService->>DataProcessingService: processAndInsertData(request)
+        DataProcessingService->>Database: Insert embeddings into vector table
+        DataController-->>User: HTTP 200 OK (Data processing completed)
+    end
